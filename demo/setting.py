@@ -7,5 +7,6 @@ USER_AGENT = (
 ROBOTSTXT_OBEY = False
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+COMMANDS_MODULE = "demo.commands"
 # DUPEFILTER_CLASS = "mercury.crawlers.scrapy.filter.RedisFilter"
 # SCHEDULER = "mercury.crawlers.scrapy.scheduler.RedisScheduler"

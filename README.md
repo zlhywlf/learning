@@ -6,4 +6,5 @@
 # python3.9
 python -m scrapy runspider scrapy/utils/spider.py
 python -m scrapy crawl default
+python -m scrapy demo default
 ```
