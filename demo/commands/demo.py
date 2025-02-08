@@ -4,7 +4,7 @@ from scrapy.settings import Settings
 import argparse
 
 
-from demo.lab import CrawlerProcessLab
+from demo.lab import CrawlerProcessCus
 from scrapy.commands.crawl import Command as CrawlCommand
 
 
@@ -15,5 +15,5 @@ class Command(CrawlCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         assert isinstance(self.settings, Settings)
-        self.crawler_process = CrawlerProcessLab(self.settings)
+        self.crawler_process = CrawlerProcessCus(self.settings)
         super().run(args, opts)
