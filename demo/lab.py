@@ -32,12 +32,8 @@ class ExecutionEngineLab(ExecutionEngine):
         assert self.spider is not None
         if self.paused:
             return
-        while (
-                not self._needs_backout()
-                and await self._next_request_from_scheduler() is not None
-        ):
+        while not self._needs_backout() and await self._next_request_from_scheduler() is not None:
             pass
-
         if self.slot.start_requests is not None and not self._needs_backout():
             try:
                 request_or_item = next(self.slot.start_requests)
@@ -62,17 +58,7 @@ class ExecutionEngineLab(ExecutionEngine):
                         f"ignored."
                     )
 
-        if await self.spider_is_idle() and self.slot.close_if_idle:
-            await self._spider_idle()
-
-    def crawl(self, request: Request) -> None:
-        """Inject the request into the spider <-> downloader pipeline"""
-        if self.spider is None:
-            raise RuntimeError(f"No open spider to crawl: {request}")
-        d = Deferred.fromCoroutine(self._schedule_request(request, self.spider))
-        d.addBoth(lambda _: self.slot.nextcall.schedule())
-
-    async def _schedule_request(self, request: Request, spider: Spider) -> None:
+    def _schedule_request(self, request: Request, spider: Spider) -> None:
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
@@ -82,42 +68,10 @@ class ExecutionEngineLab(ExecutionEngine):
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not (await self.slot.scheduler.enqueue_request(request)):  # type: ignore[union-attr]
-            self.signals.send_catch_log(
-                signals.request_dropped, request=request, spider=spider
-            )
 
-    async def _spider_idle(self) -> None:
-        assert self.spider is not None  # typing
-        expected_ex = (DontCloseSpider, CloseSpider)
-        res = self.signals.send_catch_log(
-            signals.spider_idle, spider=self.spider, dont_log=expected_ex
-        )
-        detected_ex = {
-            ex: x.value
-            for _, x in res
-            for ex in expected_ex
-            if isinstance(x, Failure) and isinstance(x.value, ex)
-        }
-        if DontCloseSpider in detected_ex:
-            return
-        if await self.spider_is_idle():
-            ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
-            assert isinstance(ex, CloseSpider)  # typing
-            self.close_spider(self.spider, reason=ex.reason)
+        d = Deferred.fromCoroutine(self.slot.scheduler.enqueue_request(request))
+        d.addBoth(lambda _: None if _ else self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider))
 
-    async def spider_is_idle(self) -> bool:
-        if self.slot is None:
-            raise RuntimeError("Engine slot not assigned")
-        if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
-            return False
-        if self.downloader.active:  # downloader has pending requests
-            return False
-        if self.slot.start_requests is not None:  # not all start requests are handled
-            return False
-        if await self.slot.scheduler.has_pending_requests():
-            return False
-        return True
 
     async def _next_request_from_scheduler(self) -> Deferred[None] | None:
         assert self.slot is not None
@@ -163,7 +117,7 @@ class SchedulerLab(Scheduler):
         return super().has_pending_requests()
 
     async def enqueue_request(self, request: Request) -> bool:
-        await sleep(request.url,1)
+        await sleep(request.url, 1)
         return super().enqueue_request(request)
 
     async def next_request(self) -> Request | None:

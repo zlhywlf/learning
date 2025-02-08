@@ -6,10 +6,6 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import DontCloseSpider
 
 
-def spider_idle():
-    raise DontCloseSpider
-
-
 class QuotesSpider(scrapy.Spider):
     name = "quotes"
     start_urls = [
@@ -28,8 +24,3 @@ class QuotesSpider(scrapy.Spider):
                 "author": quote.css("small.author::text").get(),
                 "tags": quote.css("div.tags a.tag::text").getall(),
             }
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any):
-        crawler.signals.connect(spider_idle, signal=signals.spider_idle)
-        return super().from_crawler(crawler, *args, **kwargs)
